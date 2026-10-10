@@ -99,9 +99,13 @@ def read_gff(gff, flag=['gene','pseudogene']):
     For gff sourced from NCBI database, genes in ['gene', 'pseudogene'] are recorded.
     '''
     reader = open(gff,'r')
-    lines = reader.readlines()
-    lines = [l.split('\t') for l in lines if not l.startswith('#') and len(l)>0]
-    lines = [l for l in lines if l[2] in flag]
+    lines = []
+    for l in reader:
+        if l.startswith('##FASTA'): ## the rest of the file is sequence
+            break
+        if not l.startswith('#'):
+            lines.append(l.split('\t'))
+    lines = [l for l in lines if len(l)>=9 and l[2] in flag]
     ## reorder genes by sequence (in order of first appearance), then by starting position
     ## regardless of the strand, the start point is lower than the end point.
     seq_order = {}
