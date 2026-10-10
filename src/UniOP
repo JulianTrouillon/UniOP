@@ -305,6 +305,7 @@ def pairs2operon(pred_file, d_source='Prediction', cutoff=0.5):
             flag = 0
         else:
             flag = 1 # non-operonic
+    operons = {n: [int(g) for g in genes] for n, genes in operons.items()} ## plain integers
     df_operons = pd.DataFrame(operons.items(),columns=['idx_op','idx_genes'])
     df_operons = df_operons.drop(columns=['idx_op'])
     df_operons['idx_op'] = df_operons.index
