@@ -101,9 +101,13 @@ def read_gff(gff, flag=['gene','pseudogene']):
     reader = open(gff,'r')
     lines = reader.readlines()
     lines = [l.split('\t') for l in lines if not l.startswith('#') and len(l)>0]
-    lines = [[int(l[3]), l] for l in lines if l[2] in flag]
-    ## reorder genes according to their starting position
+    lines = [l for l in lines if l[2] in flag]
+    ## reorder genes by sequence (in order of first appearance), then by starting position
     ## regardless of the strand, the start point is lower than the end point.
+    seq_order = {}
+    for l in lines:
+        seq_order.setdefault(l[0], len(seq_order))
+    lines = [[(seq_order[l[0]], int(l[3])), l] for l in lines]
     sort_lines = sorted(lines, key=lambda x:x[0])
     df = pd.DataFrame([sort_lines[i][1] for i in range(len(sort_lines))])
     df.columns = [str(i) for i in df.columns]
