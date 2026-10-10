@@ -326,6 +326,12 @@ def output_distPred(inputfile, n_sample, path=None, operon_flag=False, file_type
         df_cds = read_faa(inputfile)
     
     df_pairs = extract_pairs_multicontigs(df_cds)
+    n_cgs = sum(df_pairs['pairs']=='CGs')
+    n_dgs = sum(df_pairs['pairs']=='DGs')
+    if n_cgs == 0 or n_dgs == 0:
+        sys.exit(f"Error: found {n_cgs} convergent and {n_dgs} divergent adjacent gene pairs within sequences. "
+                 "UniOP needs both to estimate the intergenic distances of non-operonic pairs, "
+                 "so it cannot predict operons for this genome.")
     q = estimate_q(df_pairs)
     preds = distPred(q, df_pairs, n_sample)
     
