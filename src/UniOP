@@ -87,8 +87,10 @@ def read_faa(faa):
     lines = reader.readlines()
     lines = [l.split('#') for l in lines if l.startswith('>')]
     df = pd.DataFrame(lines,columns=['nc','start','stop','strand','attribute'])
+    df['id'] = df['nc'].str[1:].str.split().str[0] ## the protein name, first word of the header
+    df['locus_tag'] = ''
     df['nc'] = df['nc'].replace(r'>|_\d+\s+','',regex=True) ## extract the contig name. This works for complete genomes and metagenomes
-    df = df[['nc','start','stop','strand']].astype({'nc':'str','start':'int','stop':'int','strand':'int'})
+    df = df[['nc','start','stop','strand','id','locus_tag']].astype({'nc':'str','start':'int','stop':'int','strand':'int'})
     df['strand'] = df['strand'].replace(1,'+',regex=True)
     df['strand'] = df['strand'].replace(-1,'-',regex=True)
     df['strand'] = df['strand'].astype('str')
@@ -117,8 +119,11 @@ def read_gff(gff, flag=['gene','pseudogene']):
     df.columns = [str(i) for i in df.columns]
     df = df.rename(columns={'0':'nc','2':'feature','3':'start','4':'stop','6':'strand','8':'header'})
     df = df.astype({'feature':'str','start':'int', 'stop':'int', 'strand':'str'})
-    
-    return df[['nc','start','stop','strand']]
+    attributes = df['header'].str.strip().map(lambda a: dict(kv.strip().split('=',1) for kv in a.split(';') if '=' in kv))
+    df['id'] = attributes.map(lambda a: a.get('ID',''))
+    df['locus_tag'] = attributes.map(lambda a: a.get('locus_tag',''))
+
+    return df[['nc','start','stop','strand','id','locus_tag']]
 
 def extract_pairs_singlecontig(df_GFF):
     '''
@@ -338,7 +343,12 @@ def output_distPred(inputfile, n_sample, path=None, operon_flag=False, file_type
             else:
                 prob = ''
             fout.write(f"{i+1}\t{i+2}\t{prob.ljust(9)}\n")
-            
+
+    ## the gene behind each number in uniop.pred and uniop.operon
+    df_genes = df_cds.rename(columns={'nc':'sequence','stop':'end','id':'ID'})
+    df_genes.insert(0, 'gene', df_genes.index + 1)
+    df_genes.to_csv(f"{path}/uniop.genes", sep='\t', index=False)
+
     if operon_flag:
         df_operon = pairs2operon(outfile)
         outfile_op = f"{path}/uniop.operon"
